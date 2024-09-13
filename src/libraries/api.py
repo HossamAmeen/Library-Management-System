@@ -1,11 +1,12 @@
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
-from django.db.models import Prefetch
-from libraries.filters import LibraryFilter, BookFilter
+
+from libraries.filters import BookFilter, LibraryFilter
 from libraries.models import Author, Book, Category, Library
 from libraries.serializers import (AuthorSerializer, BookSerializer,
-                                   CategorySerializer, LibrarySerializer, ListBookSerializer)
+                                   CategorySerializer, LibrarySerializer,
+                                   ListBookSerializer)
 
 
 class LibraryViewSet(viewsets.ModelViewSet):
