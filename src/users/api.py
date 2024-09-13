@@ -3,11 +3,11 @@ import random
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
 from rest_framework import permissions, status, views
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from config.utils import send_email
 from users.models import OTP
 from users.serializers import (LoginSerializer, PasswordResetConfirmSerializer,
                                PasswordResetRequestSerializer,
@@ -57,11 +57,11 @@ class PasswordResetRequestView(views.APIView):
         if user:
             otp = str(random.randint(100000, 999999))
             OTP.objects.create(user=user, otp=otp)
-            email_body = f'Password Reset OTP: {otp}'
-            send_email(to_email=email, subject="rest password",
-                       body=email_body)
+            email_body = f'you OTP: {otp}'
+            send_mail("Reset Password", email_body, settings.EMAIL_HOST_USER,
+                      [email])
             return Response({'message': 'If your email is registered, you will'
-                                        f' receive an OTP shortly {otp}'},
+                                        ' receive an OTP shortly'},
                             status=status.HTTP_200_OK)
 
 
