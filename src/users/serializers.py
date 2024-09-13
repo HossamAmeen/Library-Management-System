@@ -1,6 +1,8 @@
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 
+from users.models import Reader
+
 User = get_user_model()
 
 
@@ -53,3 +55,9 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"password": "Passwords must match."})
         return data
+
+
+class ReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Reader
+        fields = ['username', 'email']

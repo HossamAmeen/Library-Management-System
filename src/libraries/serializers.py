@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from libraries.models import Author, Book, Category, Library
+from libraries.models import Author, Book, Borrow, Category, Library
+from users.serializers import ReadSerializer
 
 
 class LibrarySerializer(serializers.ModelSerializer):
@@ -52,3 +53,26 @@ class ListBookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = '__all__'
+
+
+class SingleBookSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Book
+        fields = '__all__'
+
+
+class ListBorrowSerializer(serializers.ModelSerializer):
+    book = SingleBookSerializer()
+    user = ReadSerializer()
+
+    class Meta:
+        model = Borrow
+        fields = "__all__"
+
+
+class BorrowSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Borrow
+        fields = "__all__"
