@@ -9,4 +9,5 @@ from .tasks import send_confirmation_email
 @receiver(post_save, sender=Borrow)
 def send_borrow_confirmation(sender, instance, created, **kwargs):
     if created:
+        return
         send_confirmation_email(instance.user.email, instance.book.title)
