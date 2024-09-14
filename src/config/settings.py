@@ -167,3 +167,12 @@ EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp-mail.outlook.com'
 EMAIL_HOST_USER = "wpbawomenhealth@outlook.com"
 EMAIL_HOST_PASSWORD = env('EMAIL_PASSWORD')
+
+
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
