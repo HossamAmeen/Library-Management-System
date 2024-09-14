@@ -1,0 +1,22 @@
+# library/tasks.py
+from celery import shared_task
+from django.core.mail import send_mail
+from django.conf import settings
+
+
+@shared_task
+def send_confirmation_email(user_email, book_title):
+    subject = 'Book Borrow Confirmation'
+    message = f'Thank you for borrowing {book_title}.'
+    send_mail(
+        subject,
+        message,
+        settings.EMAIL_HOST_USER,
+        [user_email],
+        fail_silently=False,
+    )
+
+
+@shared_task
+def send_five_minute_updates():
+    print("Test"*50)
