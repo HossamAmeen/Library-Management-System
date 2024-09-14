@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: nouchka/sqlite3:latest
+    volumes:
+      - /home/hosam/Desktop/library:/app/db
+
+  web:
+    build: .
+    command: ["daphne", "-p", "8000", "config.asgi:application"]
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .docker.env
+
+  redis:
+    image: redis:latest
+
+  celery:
+    build: .
+    command: ["celery", "-A", "config", "worker", "--loglevel=info"]
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .docker.env
+
+  beat:
+    build: .
+    command: ["celery", "-A", "config", "beat", "--loglevel=info"]
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .docker.env
+
+volumes:
+  db_data:
