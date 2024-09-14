@@ -19,4 +19,12 @@ def send_confirmation_email(user_email, book_title):
 
 @shared_task
 def send_five_minute_updates():
-    print("Test"*50)
+    subject = 'Book Borrow Confirmation'
+    message = 'Thank you for borrowing.'
+    send_mail(
+        subject,
+        message,
+        settings.EMAIL_HOST_USER,
+        ["hosamameen948@gmail.com"],
+        fail_silently=False,
+    )
