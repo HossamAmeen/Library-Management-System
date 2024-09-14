@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: nouchka/sqlite3:latest
+    volumes:
+      - /home/hosam/Desktop/library:/app/db
+  django:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - celery
+      - celerybeat
+      - db
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    command: celery -A config worker --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+
+  celerybeat:
+    build:
+      context: .
+      dockerfile: Dockerfile.celery
+    command: celery -A config beat --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"

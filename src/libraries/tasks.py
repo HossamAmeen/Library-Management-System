@@ -37,3 +37,14 @@ def send_borrowed_books_email():
             ['to@example.com'],
             fail_silently=False,
         )
+@shared_task
+def send_five_minute_updates():
+    subject = 'Book Borrow Confirmation'
+    message = 'Thank you for borrowing.'
+    send_mail(
+        subject,
+        message,
+        settings.EMAIL_HOST_USER,
+        ["hosamameen948@gmail.com"],
+        fail_silently=False,
+    )
