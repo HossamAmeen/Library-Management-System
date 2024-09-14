@@ -79,18 +79,17 @@ class BorrowViewSet(viewsets.ModelViewSet):
         return BorrowSerializer
 
     def create(self, request, *args, **kwargs):
+        if self.request.user.borrow_set.filter(is_returnd=False).count() > 3:
+            return Response({'message': "you can't borrow more 3 book"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         request_data = request.data
         request_data['user'] = request.user.id
+        
         serializer = self.get_serializer(data=request_data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-        if not request.user.is_authenticated:
-            return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
-
-        books_ids = request.data.get('books', [])
-        if not books_ids:
-            return Response({'error': 'No books provided'}, status=status.HTTP_400_BAD_REQUEST)
 
         books = Book.objects.filter(id__in=books_ids)
         if books.count() != len(books_ids):

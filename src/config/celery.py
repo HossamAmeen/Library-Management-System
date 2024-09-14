@@ -24,6 +24,10 @@ def debug_task(self):
 
 
 app.conf.beat_schedule = {
+    'send-daily-borrowed-books-email': {
+        'task': 'libraries.tasks.send_borrowed_books_email',
+        'schedule': crontab(minute=0, hour=0),  # Every day at midnight
+    },
     'send-five-minute-updates': {
         'task': 'libraries.tasks.send_five_minute_updates',
         'schedule': crontab(minute='*/1'),  # Every minute

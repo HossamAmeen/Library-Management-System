@@ -32,3 +32,4 @@ class Borrow(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE)
     borrowed_at = models.DateTimeField(auto_now_add=True)
     returned_at = models.DateTimeField(null=True, blank=True)
+    is_returnd = models.BooleanField(default=False)
