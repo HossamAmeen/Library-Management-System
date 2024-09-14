@@ -1,23 +1,22 @@
-# Use the official Python image from the Docker Hub
-FROM python:3.11-slim
+# Dockerfile
+FROM python:3.11
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Set the working directory
+# Set work directory
 WORKDIR /app
 
 # Install dependencies
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Copy the project files
+# Copy project
 COPY . /app/
-COPY .docker.env /app/.env
 
-# Expose port 8000
-EXPOSE 8000
+# Copy entrypoint script
+COPY entrypoint.sh /app/
 
-# Run the server
-CMD ["daphne", "-p", "8000", "config.asgi:application"]
+# Set entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
