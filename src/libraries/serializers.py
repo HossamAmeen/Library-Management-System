@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from rest_framework import serializers
 
 from libraries.models import Author, Book, Borrow, Category, Library
@@ -72,7 +74,25 @@ class ListBorrowSerializer(serializers.ModelSerializer):
 
 
 class BorrowSerializer(serializers.ModelSerializer):
+    returned_at = serializers.DateTimeField(required=True)
 
     class Meta:
         model = Borrow
         fields = "__all__"
+
+    def validate(self, data):
+        # Check if the date is greater than 30 days from now
+        if data.get('returned_at').date() > (datetime.now().date() + timedelta(days=30)): # noqa
+            raise serializers.ValidationError({
+                'message': 'returned date cannot be greater than 30 days from today.' # noqa
+            })
+
+        return data
+
+
+class BorrowModificationSerializer(serializers.ModelSerializer):
+    is_returned = serializers.BooleanField(required=True)
+
+    class Meta:
+        model = Borrow
+        fields = ['is_returned']

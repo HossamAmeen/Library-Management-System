@@ -1,4 +1,5 @@
 from django.db import models
+from rest_framework.exceptions import ValidationError
 
 from users.models import Reader
 
@@ -23,7 +24,6 @@ class Book(models.Model):
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     library = models.ForeignKey(Library, on_delete=models.CASCADE)
-    quantiy = models.IntegerField(default=0)
     available = models.BooleanField(default=True)
 
 
@@ -32,4 +32,4 @@ class Borrow(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE)
     borrowed_at = models.DateTimeField(auto_now_add=True)
     returned_at = models.DateTimeField(null=True, blank=True)
-    is_returnd = models.BooleanField(default=False)
+    is_returned = models.BooleanField(default=False)

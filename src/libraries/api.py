@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from libraries.filters import BookFilter, LibraryFilter
 from libraries.models import Author, Book, Borrow, Category, Library
 from libraries.serializers import (AuthorSerializer, BookSerializer,
+                                   BorrowModificationSerializer,
                                    BorrowSerializer, CategorySerializer,
                                    LibrarySerializer, ListBookSerializer,
                                    ListBorrowSerializer)
@@ -76,35 +77,24 @@ class BorrowViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == "GET":
             return ListBorrowSerializer
+        if self.request.method == "PATCH":
+            return BorrowModificationSerializer
         return BorrowSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def create(self, request, *args, **kwargs):
         if self.request.user.borrow_set.filter(is_returnd=False).count() > 3:
             return Response({'message': "you can't borrow more 3 book"},
                             status=status.HTTP_400_BAD_REQUEST)
-
         request_data = request.data
-        request_data['user'] = request.user.id
-        
-        serializer = self.get_serializer(data=request_data)
+        for request_item in request_data:
+            request_item['user'] = request.user.id
+
+        serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        books = Book.objects.filter(id__in=books_ids)
-        if books.count() != len(books_ids):
-            return Response({'error': 'One or more books not found'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if any(not book.available for book in books):
-            return Response({'error': 'One or more books are not available'}, status=status.HTTP_400_BAD_REQUEST)
-
-        data = request.data.copy()
-        data['user'] = request.user.id
-        serializer = self.get_serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            for book in books:
-                book.available = False
-                book.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
