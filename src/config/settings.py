@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'libraries',
     'users',
+    'notifications',
     # packages
     'rest_framework',
     'rest_framework_simplejwt',

@@ -19,4 +19,5 @@ from django.urls import include, path
 urlpatterns = [
     path('', include('libraries.urls')),
     path('', include('users.urls')),
+    path('', include('notifications.urls')),
 ]
