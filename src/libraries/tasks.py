@@ -1,15 +1,16 @@
 # library/tasks.py
-import datetime
+from datetime import datetime, timedelta
 
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
-from libraries.models import Borrow
+
+from users.models import Reader
 
 
 @shared_task
 def send_confirmation_email(user_email, book_title):
-    subject = 'Book Borrow Confirmation'
+    subject = 'Book BorrowHistory Confirmation'
     message = f'Thank you for borrowing {book_title}.'
     send_mail(
         subject,
@@ -21,30 +22,27 @@ def send_confirmation_email(user_email, book_title):
 
 
 @shared_task
-def send_borrowed_books_email():
-    twenty_seven_days_ago = datetime.datetime.now() - datetime.timedelta(days=27)
-    borrowed_books = Borrow.objects.filter(
-        is_returnd=False, borrowed_at__gte=twenty_seven_days_ago)
-    if borrowed_books.exists():
-        subject = 'Daily Borrowed Books'
-        message = 'Books borrowed today:\n\n'
-        for book in borrowed_books:
-            message += f'{book.user} borrowed {book.book_title} on {book.borrowed_date}\n'
-        send_mail(
-            subject,
-            message,
-            'from@example.com',
-            ['to@example.com'],
-            fail_silently=False,
-        )
-@shared_task
-def send_five_minute_updates():
-    subject = 'Book Borrow Confirmation'
-    message = 'Thank you for borrowing.'
+def send_due_book_reminders():
+    now = datetime.now()
+    three_days_from_now = now + timedelta(days=3)
+    readers = Reader.objects.filter(
+        borrowhistory__should_returned_at__date__lte=three_days_from_now.date(),
+        borrowhistory__should_returned_at__date__gte=now.date(),
+        borrowhistory__returned_at__isnull=True).distinct()
+
+    for reader in readers:
+        books_history = reader.borrowhistory_set.filter(
+            should_returned_at__date__lte=three_days_from_now.date(),
+            should_returned_at__date__gte=now.date(),
+            returned_at__isnull=True
+        ).order_by('id')
+    books_history = [f"{book_history.book.title} by {book_history.should_returned_at} \n" for book_history in books_history] # noqa
     send_mail(
-        subject,
-        message,
+        'Book Return Reminder',
+        f'Dear {reader.username},\n\n'
+        f'This is a reminder to return the book(s) {"".join(books_history)}'
+        'Thank you!',
         settings.EMAIL_HOST_USER,
-        ["hosamameen948@gmail.com"],
+        [reader.email],
         fail_silently=False,
     )

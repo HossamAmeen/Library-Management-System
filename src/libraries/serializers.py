@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
-
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from rest_framework import serializers
-
-from libraries.models import Author, Book, Borrow, Category, Library
+from django.utils import timezone
+from libraries.models import Author, Book, BorrowHistory, Category, Library
 from users.serializers import ReadSerializer
 
 
@@ -64,35 +65,88 @@ class SingleBookSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ListBorrowSerializer(serializers.ModelSerializer):
+class ListBorrowHistorySerializer(serializers.ModelSerializer):
     book = SingleBookSerializer()
     user = ReadSerializer()
 
     class Meta:
-        model = Borrow
+        model = BorrowHistory
         fields = "__all__"
 
 
-class BorrowSerializer(serializers.ModelSerializer):
-    returned_at = serializers.DateTimeField(required=True)
+class BorrowBookSerializer(serializers.Serializer):
+    book_id = serializers.IntegerField()
+    should_returned_at = serializers.DateTimeField(required=False)
+
+
+class BookTransactionSerializer(serializers.Serializer):
+    borrow_books = BorrowBookSerializer(many=True, required=False)
+    return_books = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+
+    def save(self, user):
+        borrowed_books = []
+        if 'borrow_books' in self.validated_data:
+            for item in self.validated_data['borrow_books']:
+                book = Book.objects.filter(id=item['book_id']).first()
+                if not book:
+                    raise serializers.ValidationError(
+                        f"Book with id {item['book_id']} does not exist.")
+                if not book.available:
+                    raise serializers.ValidationError({
+                       "message": f"The book '{book.title}' is not available."}
+                    )
+
+                borrow_book_data = {
+                    "user": user, "book": book
+                }
+                should_returned_at = item.get('should_returned_at')
+                if should_returned_at:
+                    if should_returned_at < timezone.now():
+                        raise serializers.ValidationError(
+                            "The should_returned_at date cannot be in the past.")
+                    if should_returned_at.date() > (timezone.now() + timedelta(days=30)).date(): # noqa
+                        raise serializers.ValidationError(
+                            "The should_returned_at date cannot be greater "
+                            "than 30 days from today.")
+
+                    borrow_book_data['should_returned_at'] = \
+                        item['should_returned_at']
+                else:
+                    borrow_book_data['should_returned_at'] = \
+                        (datetime.now() + timedelta(days=30))
+                borrow_history = BorrowHistory.objects.create(
+                    **borrow_book_data)
+                book.available = False
+                book.save()
+                borrowed_books.append(borrow_history)
+
+        if 'return_books' in self.validated_data:
+            book_ids = self.validated_data['return_books']
+            histories = BorrowHistory.objects.filter(
+                book_id__in=book_ids, user=user, returned_at__isnull=True)
+            for history in histories:
+                history.returned_at = datetime.now()
+                history.save()
+                book = history.book
+                book.available = True
+                book.save()
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    "notifications",
+                    {
+                        "type": "book_available",
+                        "title": book.title
+                    }
+                )
+
+        return borrowed_books
+
+
+class BorrowedBookSerializer(serializers.ModelSerializer):
+    should_returned_at = serializers.DateTimeField()
 
     class Meta:
-        model = Borrow
-        fields = "__all__"
-
-    def validate(self, data):
-        # Check if the date is greater than 30 days from now
-        if data.get('returned_at').date() > (datetime.now().date() + timedelta(days=30)): # noqa
-            raise serializers.ValidationError({
-                'message': 'returned date cannot be greater than 30 days from today.' # noqa
-            })
-
-        return data
-
-
-class BorrowModificationSerializer(serializers.ModelSerializer):
-    is_returned = serializers.BooleanField(required=True)
-
-    class Meta:
-        model = Borrow
-        fields = ['is_returned']
+        model = BorrowHistory
+        fields = ['book', 'borrowed_at', 'should_returned_at']
