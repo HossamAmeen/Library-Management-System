@@ -5,7 +5,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from libraries.helper import haversine 
 from libraries.filters import BookFilter, LibraryFilter
 from libraries.models import Author, Book, BorrowHistory, Category, Library
 from libraries.serializers import (AuthorSerializer, BookSerializer,
@@ -20,6 +20,24 @@ class LibraryViewSet(viewsets.ModelViewSet):
     serializer_class = LibrarySerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = LibraryFilter
+
+    def get_queryset(self):
+        # Get current location from request
+        current_lat = self.request.query_params.get('lat')
+        current_lon = self.request.query_params.get('lon')
+
+        if not current_lat or not current_lon:
+            return self.queryset
+
+        nearby_libraries = []
+        for library in Library.objects.all():
+            distance = haversine(
+                float(current_lat), float(current_lon),
+                library.latitude, library.longitude)
+            if distance <= 50:  # 50 km radius
+                nearby_libraries.append(library.id)
+
+        return Library.objects.filter(id__in=nearby_libraries)
 
 
 class AuthorViewSet(viewsets.ModelViewSet):
