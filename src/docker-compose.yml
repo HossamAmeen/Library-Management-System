@@ -1,18 +1,10 @@
 version: '3.8'
 
 services:
-  inter_db:
-    image: postgres:13
+  interview_db:
+    image: nouchka/sqlite3:latest
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    env_file:
-      - .env
-    environment:
-      POSTGRES_DB: interview_beat
-      POSTGRES_USER: delivery_user
-      POSTGRES_PASSWORD: 123
-    ports:
-      - "5432:5432"
+      - /home/hosam/Desktop/library:/app/db
 
   django:
     build: .
@@ -24,7 +16,7 @@ services:
       - redis
       - celery
       - celerybeat
-      - inter_db
+      - interview_db
 
   celery:
     build:
@@ -35,7 +27,7 @@ services:
       - .env
     depends_on:
       - redis
-      - inter_db
+      - interview_db
 
   celerybeat:
     build:
@@ -46,12 +38,9 @@ services:
       - .env
     depends_on:
       - redis
-      - inter_db
+      - interview_db
 
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
-
-volumes:
-  postgres_data:

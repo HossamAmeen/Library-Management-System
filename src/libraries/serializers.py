@@ -70,10 +70,18 @@ class SingleBookSerializer(serializers.ModelSerializer):
 class ListBorrowHistorySerializer(serializers.ModelSerializer):
     book = SingleBookSerializer()
     user = ReadSerializer()
+    penalty = serializers.SerializerMethodField()
 
     class Meta:
         model = BorrowHistory
         fields = "__all__"
+
+    def get_penalty(self, obj):
+        if obj.returned_at:
+            days_difference = (obj.should_returned_at - obj.borrowed_at).days
+            penalty = max(0, days_difference - 30)
+            return penalty
+        return 0
 
 
 class BorrowBookSerializer(serializers.Serializer):
