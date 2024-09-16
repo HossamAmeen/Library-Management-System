@@ -1,5 +1,4 @@
 from django.db import models
-from rest_framework.exceptions import ValidationError
 
 from users.models import Reader
 
@@ -27,9 +26,9 @@ class Book(models.Model):
     available = models.BooleanField(default=True)
 
 
-class Borrow(models.Model):
+class BorrowHistory(models.Model):
     user = models.ForeignKey(Reader, on_delete=models.CASCADE)
     book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    should_returned_at = models.DateTimeField(null=True, blank=True)
     borrowed_at = models.DateTimeField(auto_now_add=True)
     returned_at = models.DateTimeField(null=True, blank=True)
-    is_returned = models.BooleanField(default=False)
