@@ -17,7 +17,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if data['password'] != data['confirm_password']:
-            raise serializers.ValidationError({"password": "Passwords must match."})
+            raise serializers.ValidationError(
+                {"password": "Passwords must match."})
         return data
 
     def create(self, validated_data):
@@ -34,7 +35,8 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField()
 
     def validate(self, data):
-        user = authenticate(username=data['username'], password=data['password'])
+        user = authenticate(username=data['username'],
+                            password=data['password'])
         if user is None:
             raise serializers.ValidationError("Invalid credentials")
         return user

@@ -1,6 +1,6 @@
 import django_filters
 
-from libraries.models import Author, Book, Library
+from libraries.models import Book, Library
 
 
 class LibraryFilter(django_filters.FilterSet):

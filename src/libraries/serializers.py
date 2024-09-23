@@ -115,7 +115,7 @@ class BookTransactionSerializer(serializers.Serializer):
                 if should_returned_at:
                     if should_returned_at < timezone.now():
                         raise serializers.ValidationError(
-                            "The should_returned_at date cannot be in the past.")
+                            "The should_returned_at date cannot be in the past.") # noqa
                     if should_returned_at.date() > (timezone.now() + timedelta(days=30)).date(): # noqa
                         raise serializers.ValidationError(
                             "The should_returned_at date cannot be greater "

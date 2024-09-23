@@ -26,7 +26,7 @@ def send_due_book_reminders():
     now = datetime.now()
     three_days_from_now = now + timedelta(days=3)
     readers = Reader.objects.filter(
-        borrowhistory__should_returned_at__date__lte=three_days_from_now.date(),
+        borrowhistory__should_returned_at__date__lte=three_days_from_now.date(), # noqa
         borrowhistory__should_returned_at__date__gte=now.date(),
         borrowhistory__returned_at__isnull=True).distinct()
 
