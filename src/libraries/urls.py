@@ -1,8 +1,8 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from libraries.api import (AuthorViewSet, BookViewSet, BorrowHistoryAPI,
-                           CategoryViewSet, LibraryViewSet)
+from libraries.view import (AuthorViewSet, BookViewSet, BorrowHistoryAPI,
+                            CategoryViewSet, LibraryViewSet)
 
 router = DefaultRouter()
 router.register(r'libraries', LibraryViewSet)

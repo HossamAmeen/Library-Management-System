@@ -1,6 +1,8 @@
 import django_filters
+from django_filters import rest_framework as filters
+from django.db.models import Q, Prefetch, Count
 
-from libraries.models import Book, Library
+from libraries.models import Book, Library, Author
 
 
 class LibraryFilter(django_filters.FilterSet):
@@ -25,3 +27,35 @@ class BookFilter(django_filters.FilterSet):
     class Meta:
         model = Book
         fields = ['category', 'library', 'author']
+
+
+class AuthorFilter(django_filters.FilterSet):
+
+    class Meta:
+        model = Author
+        fields = []
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        author_filters = Q()
+        book_filters = Q()
+        book_category = self.request.query_params.get('book_category', None)
+        library = self.request.query_params.get('library', None)
+
+        if book_category:
+            author_filters &= Q(book__category__name__icontains=book_category)
+            book_filters &= Q(category__name__icontains=book_category)
+
+        if library:
+            author_filters &= Q(book__library__name__icontains=library)
+            book_filters &= Q(library__name__icontains=library)
+
+        book_query = Book.objects.filter(book_filters).select_related('category') # noqa
+
+        queryset = queryset.prefetch_related(
+            Prefetch('book_set', queryset=book_query))
+        queryset = queryset.filter(author_filters).annotate(
+            book_count=Count('book', filter=author_filters)
+        )
+
+        return queryset

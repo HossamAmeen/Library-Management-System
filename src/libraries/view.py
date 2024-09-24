@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from libraries.filters import BookFilter, LibraryFilter
+from libraries.filters import AuthorFilter, BookFilter, LibraryFilter
 from libraries.helper import haversine
 from libraries.models import Author, Book, BorrowHistory, Category, Library
 from libraries.serializers import (AuthorSerializer, BookSerializer,
@@ -44,30 +44,8 @@ class LibraryViewSet(viewsets.ModelViewSet):
 class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.order_by('-id')
     serializer_class = AuthorSerializer
-
-    def filter_queryset(self, queryset):
-        queryset = super().filter_queryset(queryset)
-        author_filters = Q()
-        book_filters = Q()
-        book_category = self.request.query_params.get('book_category', None)
-        library = self.request.query_params.get('library', None)
-
-        if book_category:
-            author_filters &= Q(book__category__name__icontains=book_category)
-            book_filters &= Q(category__name__icontains=book_category)
-
-        if library:
-            author_filters &= Q(book__library__name__icontains=library)
-            book_filters &= Q(library__name__icontains=library)
-
-        book_query = Book.objects.filter(book_filters).select_related('category') # noqa
-        queryset = queryset.prefetch_related(
-            Prefetch('book_set', queryset=book_query))
-        queryset = queryset.filter(author_filters).annotate(
-            book_count=Count('book', filter=author_filters)
-        )
-
-        return queryset
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = AuthorFilter
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
