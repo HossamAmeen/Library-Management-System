@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from rest_framework.exceptions import ValidationError
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -95,10 +96,16 @@ class BookTransactionSerializer(serializers.Serializer):
         child=serializers.IntegerField(), required=False
     )
 
-    def save(self, user):
+    def validate(self, data):
+        if self.context['user'].borrowhistory_set.filter(
+                returned_at__isnull=True).count() > 3:
+            raise ValidationError({'message': "you can't borrow more 3 book"})
+        return data
+
+    def create(self, validated_data):
         borrowed_books = []
-        if 'borrow_books' in self.validated_data:
-            for item in self.validated_data['borrow_books']:
+        if 'borrow_books' in validated_data:
+            for item in validated_data['borrow_books']:
                 book = Book.objects.filter(id=item['book_id']).first()
                 if not book:
                     raise serializers.ValidationError(
@@ -109,7 +116,7 @@ class BookTransactionSerializer(serializers.Serializer):
                     )
 
                 borrow_book_data = {
-                    "user": user, "book": book
+                    "user": self.context['user'], "book": book
                 }
                 should_returned_at = item.get('should_returned_at')
                 if should_returned_at:
@@ -132,10 +139,11 @@ class BookTransactionSerializer(serializers.Serializer):
                 book.save()
                 borrowed_books.append(borrow_history)
 
-        if 'return_books' in self.validated_data:
-            book_ids = self.validated_data['return_books']
+        if 'return_books' in validated_data:
+            book_ids = validated_data['return_books']
             histories = BorrowHistory.objects.filter(
-                book_id__in=book_ids, user=user, returned_at__isnull=True)
+                book_id__in=book_ids, user=self.context['user'],
+                returned_at__isnull=True)
             for history in histories:
                 history.returned_at = datetime.now()
                 history.save()
@@ -153,10 +161,5 @@ class BookTransactionSerializer(serializers.Serializer):
 
         return borrowed_books
 
-
-class BorrowedBookSerializer(serializers.ModelSerializer):
-    should_returned_at = serializers.DateTimeField()
-
-    class Meta:
-        model = BorrowHistory
-        fields = ['book', 'borrowed_at', 'should_returned_at']
+    def to_representation(self, instance):
+        return {"message": "Transaction successful"}

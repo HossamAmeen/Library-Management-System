@@ -1,8 +1,7 @@
 import django_filters
-from django_filters import rest_framework as filters
-from django.db.models import Q, Prefetch, Count
+from django.db.models import Count, Prefetch, Q
 
-from libraries.models import Book, Library, Author
+from libraries.models import Author, Book, Library
 
 
 class LibraryFilter(django_filters.FilterSet):

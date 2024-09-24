@@ -1,17 +1,13 @@
-from django.db.models import Count, Prefetch, Q
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets
-from rest_framework.pagination import PageNumberPagination
+from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from libraries.filters import AuthorFilter, BookFilter, LibraryFilter
 from libraries.helper import haversine
 from libraries.models import Author, Book, BorrowHistory, Category, Library
 from libraries.serializers import (AuthorSerializer, BookSerializer,
                                    BookTransactionSerializer,
-                                   BorrowedBookSerializer, CategorySerializer,
+                                   CategorySerializer,
                                    LibrarySerializer, ListBookSerializer,
                                    ListBorrowHistorySerializer)
 
@@ -66,30 +62,22 @@ class BookViewSet(viewsets.ModelViewSet):
             return BookSerializer
 
 
-class BorrowHistoryAPI(APIView):
+class BorrowHistoryAPI(generics.ListCreateAPIView):
+    queryset = BorrowHistory.objects.select_related(
+        'book', 'user').order_by('-id')
     permission_classes = [IsAuthenticated]
+    serializer_class = ListBorrowHistorySerializer
 
-    def get(self, request):
-        paginator = PageNumberPagination()
-        paginator.page_size = 10
-        data = BorrowHistory.objects.filter(user=request.user).select_related(
-            'book', 'user').order_by('-id')
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return ListBorrowHistorySerializer
+        else:
+            return BookTransactionSerializer
 
-        data = paginator.paginate_queryset(data, request)
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['user'] = self.request.user
+        return context
 
-        return paginator.get_paginated_response(ListBorrowHistorySerializer(
-            data, many=True).data)
-
-    def post(self, request):
-        if self.request.user.borrowhistory_set.filter(returned_at__isnull=True).count() > 3: # noqa
-            return Response({'message': "you can't borrow more 3 book"},
-                            status=status.HTTP_400_BAD_REQUEST)
-        serializer = BookTransactionSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        borrowed_books = serializer.save(user=request.user)
-        borrowed_books_serializer = BorrowedBookSerializer(
-            borrowed_books, many=True)
-        return Response({
-            "message": "Transaction successful",
-            "borrowed_books": borrowed_books_serializer.data
-        }, status=status.HTTP_200_OK)
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
