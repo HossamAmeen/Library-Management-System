@@ -1,8 +1,8 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from users.api import (PasswordResetConfirmView, PasswordResetRequestView,
-                       RegisterView)
+from users.view import (PasswordResetConfirmView, PasswordResetRequestView,
+                        RegisterView)
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
